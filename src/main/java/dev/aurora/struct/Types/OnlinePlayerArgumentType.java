@@ -8,8 +8,10 @@ import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 public class OnlinePlayerArgumentType implements ArgumentType<Player> {
+
     @Override
     public String getName() {
         return "player";
@@ -17,11 +19,19 @@ public class OnlinePlayerArgumentType implements ArgumentType<Player> {
 
     @Override
     public Player parse(CommandSender sender, String input) throws ArgumentParseException {
-        Player player = Bukkit.getPlayer(input);
-        if (player == null) {
-            throw new ArgumentParseException("Player '" + input + "' not found!");
+        if (input == null || input.trim().isEmpty()) {
+            System.out.println("Player input is null or empty");
+            throw new ArgumentParseException("Player name cannot be empty!");
         }
-        return player;
+
+        // Case-insensitive player lookup
+        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+            if (onlinePlayer.getName().equalsIgnoreCase(input)) {
+                return onlinePlayer;
+            }
+        }
+
+        throw new ArgumentParseException("Player '" + input + "' not found or offline!");
     }
 
     @Override
