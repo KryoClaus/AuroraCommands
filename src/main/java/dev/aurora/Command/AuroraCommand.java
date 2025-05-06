@@ -37,6 +37,11 @@ public class AuroraCommand {
         return this;
     }
 
+    public AuroraCommand addAliases(String... aliases) {
+        Collections.addAll(this.aliases, aliases);
+        return this;
+    }
+
     public AuroraCommand addPermission(String permission) {
         this.permission = permission;
         return this;
