@@ -1,4 +1,4 @@
-package dev.aurora.struct.Types;
+package dev.aurora.struct.Types.Strings;
 
 import dev.aurora.struct.ArgumentType;
 import org.bukkit.command.CommandSender;

@@ -4,10 +4,13 @@ import dev.aurora.Command.AuroraCommand;
 import dev.aurora.Execption.ArgumentParseException;
 import dev.aurora.struct.ArgumentTypeRegistry;
 import dev.aurora.struct.CommandTabCompleter;
-import dev.aurora.struct.Types.IntegerArgumentType;
-import dev.aurora.struct.Types.LocationArgumentType;
-import dev.aurora.struct.Types.OnlinePlayerArgumentType;
-import dev.aurora.struct.Types.StringArgumentType;
+import dev.aurora.struct.Types.Boolean.BooleanArgumentType;
+import dev.aurora.struct.Types.Double.DoubleArgumentType;
+import dev.aurora.struct.Types.Float.FloatArgumentType;
+import dev.aurora.struct.Types.Integers.IntegerArgumentType;
+import dev.aurora.struct.Types.Location.LocationArgumentType;
+import dev.aurora.struct.Types.Player.OnlinePlayerArgumentType;
+import dev.aurora.struct.Types.Strings.StringArgumentType;
 import org.bukkit.command.*;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -35,6 +38,9 @@ public class CommandManager implements CommandExecutor {
         argumentRegistry.registerType("string", new StringArgumentType());
         argumentRegistry.registerType("integer", new IntegerArgumentType());
         argumentRegistry.registerType("location", new LocationArgumentType());
+        argumentRegistry.registerType("float", new FloatArgumentType());
+        argumentRegistry.registerType("boolean", new BooleanArgumentType());
+        argumentRegistry.registerType("double", new DoubleArgumentType());
     }
 
     public void registerCommand(AuroraCommand command) {

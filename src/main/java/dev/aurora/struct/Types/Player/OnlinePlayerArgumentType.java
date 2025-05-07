@@ -1,4 +1,4 @@
-package dev.aurora.struct.Types;
+package dev.aurora.struct.Types.Player;
 
 import dev.aurora.Execption.ArgumentParseException;
 import dev.aurora.struct.ArgumentType;
@@ -8,7 +8,6 @@ import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
 
 public class OnlinePlayerArgumentType implements ArgumentType<Player> {
 

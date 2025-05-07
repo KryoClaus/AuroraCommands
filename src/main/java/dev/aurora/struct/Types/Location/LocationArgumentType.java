@@ -1,4 +1,4 @@
-package dev.aurora.struct.Types;
+package dev.aurora.struct.Types.Location;
 
 import dev.aurora.Execption.ArgumentParseException;
 import dev.aurora.struct.ArgumentType;
@@ -9,7 +9,6 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 

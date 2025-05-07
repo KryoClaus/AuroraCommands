@@ -1,24 +1,25 @@
-package dev.aurora.struct.Types;
+package dev.aurora.struct.Types.Float;
 
 import dev.aurora.Execption.ArgumentParseException;
 import dev.aurora.struct.ArgumentType;
 import org.bukkit.command.CommandSender;
 
+import java.awt.*;
 import java.util.Collections;
 import java.util.List;
 
-public class IntegerArgumentType implements ArgumentType<Integer> {
+public class FloatArgumentType implements ArgumentType<Float> {
     @Override
     public String getName() {
-        return "integer";
+        return "float";
     }
 
     @Override
-    public Integer parse(CommandSender sender, String input) throws ArgumentParseException {
+    public Float parse(CommandSender sender, String input) throws ArgumentParseException {
         try {
-            return Integer.parseInt(input);
-        } catch (NumberFormatException e) {
-            throw new ArgumentParseException("'" + input + "' is not a valid number!");
+            return Float.parseFloat(input);
+        }catch (NumberFormatException e){
+            throw new ArgumentParseException(input);
         }
     }
 
