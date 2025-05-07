@@ -2,13 +2,18 @@ package dev.aurora.Manager;
 
 import dev.aurora.Command.AuroraCommand;
 import dev.aurora.Execption.ArgumentParseException;
+import dev.aurora.struct.ArgumentType;
 import dev.aurora.struct.ArgumentTypeRegistry;
 import dev.aurora.struct.CommandTabCompleter;
 import dev.aurora.struct.Types.Boolean.BooleanArgumentType;
 import dev.aurora.struct.Types.Double.DoubleArgumentType;
+import dev.aurora.struct.Types.Entity.EntityArgumentType;
 import dev.aurora.struct.Types.Float.FloatArgumentType;
 import dev.aurora.struct.Types.Integers.IntegerArgumentType;
+import dev.aurora.struct.Types.Item.ItemDataArgumentType;
+import dev.aurora.struct.Types.Item.ItemStackArgumentType;
 import dev.aurora.struct.Types.Location.LocationArgumentType;
+import dev.aurora.struct.Types.Player.AdminPlayerArgumentType;
 import dev.aurora.struct.Types.Player.OnlinePlayerArgumentType;
 import dev.aurora.struct.Types.Strings.StringArgumentType;
 import org.bukkit.command.*;
@@ -41,6 +46,10 @@ public class CommandManager implements CommandExecutor {
         argumentRegistry.registerType("float", new FloatArgumentType());
         argumentRegistry.registerType("boolean", new BooleanArgumentType());
         argumentRegistry.registerType("double", new DoubleArgumentType());
+        argumentRegistry.registerType("admins", new AdminPlayerArgumentType());
+        argumentRegistry.registerType("item", new ItemStackArgumentType());
+        argumentRegistry.registerType("itemData", new ItemDataArgumentType());
+        argumentRegistry.registerType("entityType", new EntityArgumentType());
     }
 
     public void registerCommand(AuroraCommand command) {

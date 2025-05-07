@@ -19,17 +19,14 @@ public class OnlinePlayerArgumentType implements ArgumentType<Player> {
     @Override
     public Player parse(CommandSender sender, String input) throws ArgumentParseException {
         if (input == null || input.trim().isEmpty()) {
-            System.out.println("Player input is null or empty");
             throw new ArgumentParseException("Player name cannot be empty!");
         }
-
         // Case-insensitive player lookup
         for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
             if (onlinePlayer.getName().equalsIgnoreCase(input)) {
                 return onlinePlayer;
             }
         }
-
         throw new ArgumentParseException("Player '" + input + "' not found or offline!");
     }
 
