@@ -18,4 +18,8 @@ public class CommandContext {
     public <T> T getArgument(String name) {
         return (T) arguments.get(name);
     }
+
+    public Map<String, Object> getArguments(){
+        return new HashMap<>(arguments);
+    }
 }

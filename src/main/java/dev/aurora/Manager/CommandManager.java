@@ -47,8 +47,6 @@ public class CommandManager implements CommandExecutor {
         argumentRegistry.registerType("boolean", new BooleanArgumentType());
         argumentRegistry.registerType("double", new DoubleArgumentType());
         argumentRegistry.registerType("admins", new AdminPlayerArgumentType());
-        argumentRegistry.registerType("item", new ItemStackArgumentType());
-        argumentRegistry.registerType("itemData", new ItemDataArgumentType());
         argumentRegistry.registerType("entityType", new EntityArgumentType());
     }
 

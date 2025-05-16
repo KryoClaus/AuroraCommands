@@ -16,12 +16,35 @@ public class AuroraCommand {
     private String permission;
     private long cooldownMillis;
     private final Map<UUID, Long> cooldowns;
-    private final List<ArgumentType<?>> arguments;
+    private final List<ArgumentEntry> arguments;
     private BiConsumer<CommandSender, CommandContext> executor;
     private Class<? extends CommandSender> senderType;
     private final List<AuroraCommand> subCommands;
     private final CommandManager manager;
 
+    public static class ArgumentEntry {
+        private final String name;
+        private final ArgumentType<?> type;
+
+        public ArgumentEntry(String name, ArgumentType<?> type){
+            this.name = name;
+            this.type = type;
+        }
+
+        public String getName(){
+            return name;
+        }
+
+        public ArgumentType<?> getType(){
+            return type;
+        }
+    }
+
+    /**
+     *
+     * @param name Command Name
+     * @param manager Command Manager
+     */
     public AuroraCommand(String name, CommandManager manager) {
         this.name = name;
         this.manager = manager;
@@ -32,30 +55,66 @@ public class AuroraCommand {
         this.senderType = CommandSender.class;
     }
 
+    /**
+     *
+     * @param alias
+     * @return
+     */
+
     public AuroraCommand addAlias(String alias) {
         aliases.add(alias);
         return this;
     }
 
+    /**
+     *
+     * @param aliases
+     * @return
+     */
     public AuroraCommand addAliases(String... aliases) {
         Collections.addAll(this.aliases, aliases);
         return this;
     }
+
+    /**
+     *
+     * @param permission
+     * @return
+     */
 
     public AuroraCommand addPermission(String permission) {
         this.permission = permission;
         return this;
     }
 
+    /**
+     *
+     * @param seconds
+     * @return
+     */
+
     public AuroraCommand addCooldown(long seconds) {
         this.cooldownMillis = seconds * 1000;
         return this;
     }
 
+    /**
+     *
+     * @param name
+     * @param type
+     * @return
+     */
     public AuroraCommand addArgument(String name, ArgumentType<?> type) {
-        arguments.add(type);
+        arguments.add(new ArgumentEntry(name, type));
         return this;
     }
+
+    /**
+     *
+     * @param senderType
+     * @param executor
+     * @return
+     */
 
     public AuroraCommand addExecution(Class<? extends CommandSender> senderType, BiConsumer<CommandSender, CommandContext> executor) {
         this.senderType = senderType;
@@ -63,15 +122,31 @@ public class AuroraCommand {
         return this;
     }
 
+    /**
+     *
+     * @param subCommand
+     * @return
+     */
+
     public AuroraCommand addSubCommand(AuroraCommand subCommand) {
         subCommands.add(subCommand);
         return this;
     }
 
+    /**
+     *
+     * @return
+     */
+
     public AuroraCommand register() {
         manager.registerCommand(this);
         return this;
     }
+
+    /**
+     *
+     * @return
+     */
 
     public String getName() {
         return name;
@@ -108,6 +183,13 @@ public class AuroraCommand {
         }
     }
 
+    /**
+     *
+     * @param sender
+     * @param args
+     * @throws ArgumentParseException
+     */
+
     public void execute(CommandSender sender, String[] args) throws ArgumentParseException {
         if (!senderType.isInstance(sender)) {
             sender.sendMessage("§cThis command is only for " + senderType.getSimpleName() + "!");
@@ -140,11 +222,21 @@ public class AuroraCommand {
             return;
         }
 
+        // Parse arguments
         CommandContext context = new CommandContext();
         for (int i = 0; i < arguments.size(); i++) {
-            ArgumentType<?> type = arguments.get(i);
-            Object value = type.parse(sender, args[i]);
-            context.addArgument(type.getName(), value);
+            ArgumentEntry entry = arguments.get(i);
+            String argName = entry.getName();
+            ArgumentType<?> type = entry.getType();
+            String input = i < args.length ? args[i] : null;
+            try {
+                Object value = type.parse(sender, input);
+                context.addArgument(type.getName(), value);
+            }catch (ArgumentParseException e){
+                throw e;
+            }
+            ;
+
         }
 
         if (executor != null) {
@@ -168,7 +260,8 @@ public class AuroraCommand {
             }
             // Add main command argument completions if applicable
             if (!arguments.isEmpty()) {
-                completions.addAll(arguments.get(0).getCompletions(sender));
+                ArgumentType<?> type = arguments.get(args.length - 1).getType();
+                return type.getCompletions(sender).stream().filter(completion -> completion.toLowerCase().startsWith(args[args.length - 1].toLowerCase())).collect(Collectors.toList());
             }
             return completions.stream()
                     .filter(c -> c.toLowerCase().startsWith(args[0].toLowerCase()))
@@ -181,18 +274,14 @@ public class AuroraCommand {
                     return subCommand.getTabCompletions(sender, Arrays.copyOfRange(args, 1, args.length));
                 }
             }
-            // Handle main command arguments
-            if (args.length - 1 <= arguments.size()) {
-                ArgumentType<?> type = arguments.get(args.length - 1);
-                return type.getCompletions(sender).stream()
-                        .filter(c -> c.toLowerCase().startsWith(args[args.length - 1].toLowerCase()))
-                        .sorted()
-                        .collect(Collectors.toList());
-            }
         }
-        return Collections.emptyList();
+        return new ArrayList<>();
     }
 
+    /**
+     *
+     * @return
+     */
     private String getUsage() {
         StringBuilder usage = new StringBuilder();
         if (!subCommands.isEmpty()) {
@@ -200,14 +289,14 @@ public class AuroraCommand {
             usage.append(getSubCommandNames());
             if (!arguments.isEmpty()) {
                 usage.append("|");
-                for (ArgumentType<?> arg : arguments) {
-                    usage.append("<").append(arg.getName()).append(">");
+                for (ArgumentEntry entry : arguments) {
+                    usage.append("<").append(entry.getName()).append(">");
                 }
             }
             usage.append("]");
         } else {
-            for (ArgumentType<?> arg : arguments) {
-                usage.append("<").append(arg.getName()).append("> ");
+            for (ArgumentEntry entry : arguments) {
+                usage.append("<").append(entry.getName()).append("> ");
             }
         }
         return usage.toString().trim();
