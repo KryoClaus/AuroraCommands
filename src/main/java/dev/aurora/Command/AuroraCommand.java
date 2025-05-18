@@ -6,10 +6,18 @@ import dev.aurora.struct.ArgumentType;
 import dev.aurora.struct.CommandContext;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
+
 import java.util.*;
 import java.util.function.BiConsumer;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+/**
+ * The core class for defining and executing commands in the AuroraCommand API.
+ * Supports fluent configuration of commands, subcommands, arguments, permissions, cooldowns, and tab completion.
+ * Allows arbitrary argument names for flexible command design.
+ */
 public class AuroraCommand {
     private final String name;
     private final List<String> aliases;
@@ -21,29 +29,32 @@ public class AuroraCommand {
     private Class<? extends CommandSender> senderType;
     private final List<AuroraCommand> subCommands;
     private final CommandManager manager;
+    private final Logger logger;
 
-    public static class ArgumentEntry {
+    // Inner class to store argument name and type
+    private static class ArgumentEntry {
         private final String name;
         private final ArgumentType<?> type;
 
-        public ArgumentEntry(String name, ArgumentType<?> type){
+        ArgumentEntry(String name, ArgumentType<?> type) {
             this.name = name;
             this.type = type;
         }
 
-        public String getName(){
+        String getName() {
             return name;
         }
 
-        public ArgumentType<?> getType(){
+        ArgumentType<?> getType() {
             return type;
         }
     }
 
     /**
+     * Constructs a new AuroraCommand with the specified name and manager.
      *
-     * @param name Command Name
-     * @param manager Command Manager
+     * @param name    The command name (e.g., "message").
+     * @param manager The CommandManager instance managing this command.
      */
     public AuroraCommand(String name, CommandManager manager) {
         this.name = name;
@@ -53,151 +64,121 @@ public class AuroraCommand {
         this.arguments = new ArrayList<>();
         this.subCommands = new ArrayList<>();
         this.senderType = CommandSender.class;
+        this.logger = Logger.getLogger("InfusedAddons");
     }
 
     /**
+     * Adds an alias for the command.
      *
-     * @param alias
-     * @return
+     * @param alias The alias to add.
+     * @return This AuroraCommand for chaining.
      */
-
     public AuroraCommand addAlias(String alias) {
-        aliases.add(alias);
+        aliases.add(alias.toLowerCase());
+        logger.info("Added alias '" + alias + "' for command: " + name);
         return this;
     }
 
     /**
+     * Adds multiple aliases for the command.
      *
-     * @param aliases
-     * @return
+     * @param aliases The aliases to add.
+     * @return This AuroraCommand for chaining.
      */
     public AuroraCommand addAliases(String... aliases) {
-        Collections.addAll(this.aliases, aliases);
+        for (String alias : aliases) {
+            addAlias(alias);
+        }
         return this;
     }
 
     /**
+     * Sets the required permission for the command.
      *
-     * @param permission
-     * @return
+     * @param permission The permission node (e.g., "infusedpvp.message").
+     * @return This AuroraCommand for chaining.
      */
-
     public AuroraCommand addPermission(String permission) {
         this.permission = permission;
+        logger.info("Set permission '" + permission + "' for command: " + name);
         return this;
     }
 
     /**
+     * Sets a cooldown for the command in seconds.
      *
-     * @param seconds
-     * @return
+     * @param seconds The cooldown duration.
+     * @return This AuroraCommand for chaining.
      */
-
     public AuroraCommand addCooldown(long seconds) {
         this.cooldownMillis = seconds * 1000;
+        logger.info("Set cooldown " + seconds + " seconds for command: " + name);
         return this;
     }
 
     /**
+     * Adds an argument to the command with a user-defined name and type.
      *
-     * @param name
-     * @param type
-     * @return
+     * @param name The name of the argument (e.g., "customName").
+     * @param type The argument type (e.g., StringArgumentType).
+     * @return This AuroraCommand for chaining.
      */
     public AuroraCommand addArgument(String name, ArgumentType<?> type) {
+        logger.info("Adding argument: name=" + name + ", type=" + type.getName());
         arguments.add(new ArgumentEntry(name, type));
         return this;
     }
 
     /**
+     * Sets the execution logic for the command, restricted to a specific sender type.
      *
-     * @param senderType
-     * @param executor
-     * @return
+     * @param senderType The type of sender (e.g., Player.class).
+     * @param executor   The execution logic.
+     * @return This AuroraCommand for chaining.
      */
-
     public AuroraCommand addExecution(Class<? extends CommandSender> senderType, BiConsumer<CommandSender, CommandContext> executor) {
         this.senderType = senderType;
         this.executor = executor;
+        logger.info("Set execution for command: " + name + ", senderType: " + senderType.getSimpleName());
         return this;
     }
 
     /**
+     * Adds a subcommand to this command.
      *
-     * @param subCommand
-     * @return
+     * @param subCommand The subcommand to add.
+     * @return This AuroraCommand for chaining.
      */
-
     public AuroraCommand addSubCommand(AuroraCommand subCommand) {
         subCommands.add(subCommand);
+        logger.info("Added subcommand '" + subCommand.getName() + "' to command: " + name);
         return this;
     }
 
     /**
-     *
-     * @return
+     * Registers the command with the CommandManager.
      */
-
-    public AuroraCommand register() {
+    public void register() {
         manager.registerCommand(this);
-        return this;
+        logger.info("Registered command: " + name);
     }
 
     /**
+     * Executes the command or its subcommands.
      *
-     * @return
+     * @param sender The sender executing the command.
+     * @param args   The command arguments.
+     * @throws ArgumentParseException If argument parsing fails.
      */
-
-    public String getName() {
-        return name;
-    }
-
-    public List<String> getAliases() {
-        return aliases;
-    }
-
-    public boolean hasPermission(CommandSender sender) {
-        return permission == null || sender.hasPermission(permission);
-    }
-
-    public boolean isOnCooldown(CommandSender sender) {
-        if (!(sender instanceof Player) || cooldownMillis == 0) return false;
-        Player player = (Player) sender;
-        Long lastUsed = cooldowns.get(player.getUniqueId());
-        if (lastUsed == null) return false;
-        return System.currentTimeMillis() < lastUsed + cooldownMillis;
-    }
-
-    public long getCooldownRemaining(CommandSender sender) {
-        if (!(sender instanceof Player)) return 0;
-        Player player = (Player) sender;
-        Long lastUsed = cooldowns.get(player.getUniqueId());
-        if (lastUsed == null) return 0;
-        return Math.max(0, lastUsed + cooldownMillis - System.currentTimeMillis());
-    }
-
-    public void applyCooldown(CommandSender sender) {
-        if (sender instanceof Player && cooldownMillis > 0) {
-            Player player = (Player) sender;
-            cooldowns.put(player.getUniqueId(), System.currentTimeMillis());
-        }
-    }
-
-    /**
-     *
-     * @param sender
-     * @param args
-     * @throws ArgumentParseException
-     */
-
     public void execute(CommandSender sender, String[] args) throws ArgumentParseException {
+        logger.info("Executing command: " + name + " for sender: " + sender.getName() + ", args: " + (args != null ? String.join(", ", args) : "null"));
         if (!senderType.isInstance(sender)) {
             sender.sendMessage("§cThis command is only for " + senderType.getSimpleName() + "!");
             return;
         }
 
         // Check for subcommands
-        if (args.length > 0) {
+        if (args != null && args.length > 0) {
             for (AuroraCommand subCommand : subCommands) {
                 if (subCommand.getName().equalsIgnoreCase(args[0]) || subCommand.getAliases().stream().anyMatch(alias -> alias.equalsIgnoreCase(args[0]))) {
                     if (!subCommand.hasPermission(sender)) {
@@ -216,9 +197,10 @@ public class AuroraCommand {
             }
         }
 
-        // Execute main command
-        if (arguments.size() > args.length) {
+        // Validate argument count
+        if (args == null || arguments.size() > args.length) {
             sender.sendMessage("§cUsage: /" + name + " " + getUsage());
+            logger.warning("Insufficient arguments for " + name + ": expected " + arguments.size() + ", got " + (args != null ? args.length : 0));
             return;
         }
 
@@ -226,20 +208,26 @@ public class AuroraCommand {
         CommandContext context = new CommandContext();
         for (int i = 0; i < arguments.size(); i++) {
             ArgumentEntry entry = arguments.get(i);
-            String argName = entry.getName();
+            String argName = entry.getName(); // Use user-defined name
             ArgumentType<?> type = entry.getType();
             String input = i < args.length ? args[i] : null;
             try {
+                logger.info("Parsing argument " + argName + " (type: " + type.getName() + ") with input: " + (input != null ? input : "null"));
                 Object value = type.parse(sender, input);
-                context.addArgument(type.getName(), value);
-            }catch (ArgumentParseException e){
+                if (value == null) {
+                    logger.warning("Parsed value is null for argument " + argName);
+                }
+                context.addArgument(argName, value);
+                logger.info("Added argument " + argName + ": " + (value != null ? value.toString() : "null"));
+            } catch (ArgumentParseException e) {
+                logger.warning("Failed to parse argument " + argName + ": " + e.getMessage());
                 throw e;
             }
-            ;
-
         }
 
+        // Execute command
         if (executor != null) {
+            logger.info("Executing command with context: " + context.toString());
             executor.accept(sender, context);
         } else if (subCommands.size() > 0) {
             sender.sendMessage("§cAvailable subcommands: " + getSubCommandNames());
@@ -248,65 +236,162 @@ public class AuroraCommand {
         }
     }
 
+    /**
+     * Checks if the sender has the required permission.
+     *
+     * @param sender The sender to check.
+     * @return True if the sender has permission or no permission is set, false otherwise.
+     */
+    public boolean hasPermission(CommandSender sender) {
+        if (permission == null || permission.isEmpty()) {
+            return true;
+        }
+        boolean hasPermission = sender.hasPermission(permission);
+        logger.info("Checking permission '" + permission + "' for sender: " + sender.getName() + ", result: " + hasPermission);
+        return hasPermission;
+    }
+
+    /**
+     * Checks if the command is on cooldown for the sender.
+     *
+     * @param sender The sender to check.
+     * @return True if the command is on cooldown, false otherwise.
+     */
+    public boolean isOnCooldown(CommandSender sender) {
+        if (cooldownMillis <= 0 || !(sender instanceof Player)) {
+            return false;
+        }
+        UUID uuid = ((Player) sender).getUniqueId();
+        Long lastUsed = cooldowns.get(uuid);
+        if (lastUsed == null) {
+            return false;
+        }
+        long now = System.currentTimeMillis();
+        boolean onCooldown = now < lastUsed + cooldownMillis;
+        logger.info("Checking cooldown for " + name + " by " + sender.getName() + ": onCooldown=" + onCooldown);
+        return onCooldown;
+    }
+
+    /**
+     * Gets the remaining cooldown time for the sender.
+     *
+     * @param sender The sender to check.
+     * @return The remaining cooldown time in milliseconds, or 0 if not on cooldown.
+     */
+    public long getCooldownRemaining(CommandSender sender) {
+        if (cooldownMillis <= 0 || !(sender instanceof Player)) {
+            return 0;
+        }
+        UUID uuid = ((Player) sender).getUniqueId();
+        Long lastUsed = cooldowns.get(uuid);
+        if (lastUsed == null) {
+            return 0;
+        }
+        long now = System.currentTimeMillis();
+        long remaining = lastUsed + cooldownMillis - now;
+        return Math.max(0, remaining);
+    }
+
+    /**
+     * Applies a cooldown to the sender.
+     *
+     * @param sender The sender to apply the cooldown to.
+     */
+    public void applyCooldown(CommandSender sender) {
+        if (cooldownMillis <= 0 || !(sender instanceof Player)) {
+            return;
+        }
+        UUID uuid = ((Player) sender).getUniqueId();
+        cooldowns.put(uuid, System.currentTimeMillis());
+        logger.info("Applied cooldown for " + name + " to " + sender.getName());
+    }
+
+    /**
+     * Gets tab completion suggestions for the command.
+     *
+     * @param sender The sender requesting completions.
+     * @param args   The current arguments.
+     * @return A list of completion suggestions.
+     */
     public List<String> getTabCompletions(CommandSender sender, String[] args) {
+        logger.info("Generating tab completions for " + name + ", args: " + (args != null ? String.join(", ", args) : "null"));
+        if (args == null || args.length == 0) {
+            return new ArrayList<>();
+        }
+
+        // Suggest subcommands for the first argument
         if (args.length == 1) {
             List<String> completions = new ArrayList<>();
-            // Add subcommand names and aliases
             for (AuroraCommand subCommand : subCommands) {
                 if (subCommand.hasPermission(sender)) {
                     completions.add(subCommand.getName());
                     completions.addAll(subCommand.getAliases());
                 }
             }
-            // Add main command argument completions if applicable
-            if (!arguments.isEmpty()) {
-                ArgumentType<?> type = arguments.get(args.length - 1).getType();
-                return type.getCompletions(sender).stream().filter(completion -> completion.toLowerCase().startsWith(args[args.length - 1].toLowerCase())).collect(Collectors.toList());
+            for (ArgumentEntry entry : arguments) {
+                completions.addAll(entry.getType().getCompletions(sender));
             }
             return completions.stream()
-                    .filter(c -> c.toLowerCase().startsWith(args[0].toLowerCase()))
-                    .sorted()
+                    .filter(completion -> completion.toLowerCase().startsWith(args[0].toLowerCase()))
                     .collect(Collectors.toList());
-        } else if (args.length > 1) {
-            // Check for subcommand
-            for (AuroraCommand subCommand : subCommands) {
-                if (subCommand.getName().equalsIgnoreCase(args[0]) || subCommand.getAliases().stream().anyMatch(alias -> alias.equalsIgnoreCase(args[0]))) {
+        }
+
+        // Suggest argument completions
+        if (args.length <= arguments.size()) {
+            ArgumentType<?> type = arguments.get(args.length - 1).getType();
+            return type.getCompletions(sender).stream()
+                    .filter(completion -> completion.toLowerCase().startsWith(args[args.length - 1].toLowerCase()))
+                    .collect(Collectors.toList());
+        }
+
+        // Suggest subcommand completions
+        for (AuroraCommand subCommand : subCommands) {
+            if (subCommand.getName().equalsIgnoreCase(args[0]) || subCommand.getAliases().stream().anyMatch(alias -> alias.equalsIgnoreCase(args[0]))) {
+                if (subCommand.hasPermission(sender)) {
                     return subCommand.getTabCompletions(sender, Arrays.copyOfRange(args, 1, args.length));
                 }
             }
         }
+
         return new ArrayList<>();
     }
 
     /**
+     * Gets the usage string for the command.
      *
-     * @return
+     * @return The usage string.
      */
-    private String getUsage() {
+    public String getUsage() {
         StringBuilder usage = new StringBuilder();
-        if (!subCommands.isEmpty()) {
-            usage.append("[");
-            usage.append(getSubCommandNames());
-            if (!arguments.isEmpty()) {
+        for (ArgumentEntry entry : arguments) {
+            usage.append("<").append(entry.getName()).append("> ");
+        }
+        for (AuroraCommand subCommand : subCommands) {
+            if (usage.length() > 0) {
                 usage.append("|");
-                for (ArgumentEntry entry : arguments) {
-                    usage.append("<").append(entry.getName()).append(">");
-                }
             }
-            usage.append("]");
-        } else {
-            for (ArgumentEntry entry : arguments) {
-                usage.append("<").append(entry.getName()).append("> ");
-            }
+            usage.append(subCommand.getName());
         }
         return usage.toString().trim();
     }
 
-    private String getSubCommandNames() {
-        StringBuilder names = new StringBuilder();
-        for (AuroraCommand subCommand : subCommands) {
-            names.append(subCommand.getName()).append(", ");
-        }
-        return names.length() > 0 ? names.substring(0, names.length() - 2) : "";
+    /**
+     * Gets the names of available subcommands.
+     *
+     * @return A string of subcommand names.
+     */
+    public String getSubCommandNames() {
+        return subCommands.stream()
+                .map(AuroraCommand::getName)
+                .collect(Collectors.joining(", "));
+    }
+
+    // Getters
+    public String getName() {
+        return name;
+    }
+
+    public List<String> getAliases() {
+        return new ArrayList<>(aliases);
     }
 }
